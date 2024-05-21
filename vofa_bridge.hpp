@@ -12,32 +12,12 @@
 #include "array"
 
 namespace vpb {
-
-template <typename T>
-struct Singleton {
-    constexpr static T& Get() {
-        static T instance{};
-        return instance;
-    }
-
-   protected:
-    constexpr Singleton() noexcept = default;
-
-    constexpr Singleton(const Singleton&) noexcept = default;
-
-    Singleton<T>& operator=(const Singleton&) noexcept = default;
-
-    constexpr Singleton(Singleton&&) noexcept = default;
-
-    Singleton<T>& operator=(Singleton&&) noexcept = default;
-};
-
-class VofaBridge : public Singleton<VofaBridge> {
+class VofaBridge {
    private:
     template <std::size_t len>
     struct [[gnu::packed]] Frame {
         std::array<float, len> data{};
-        const unsigned char tail[4]{};
+        std::array<unsigned char, 4> tail{};
     };
 
     void Open(std::string_view ip, unsigned short port) {
@@ -70,9 +50,7 @@ class VofaBridge : public Singleton<VofaBridge> {
      *
      * @param data 插入的数据
      */
-    void PushData(auto&&... data) {
-        (..., data_buffer_.push_back(static_cast<float>(data)));
-    }
+    void PushData(auto&&... data) { (..., data_buffer_.push_back(static_cast<float>(data))); }
     /**
      * @brief 重新赋值缓冲区所有数据
      *
@@ -128,11 +106,19 @@ class VofaBridge : public Singleton<VofaBridge> {
         Open(ip, port);
     }
 
-    VofaBridge() { Reset("127.0.0.1", 1347); };
+    /**
+     * @brief 获取一个VofaBridge实例引用
+     */
+    static VofaBridge& Get() {
+        static VofaBridge instance{};
+        return instance;
+    }
 
     ~VofaBridge() { Close(); }
 
    private:
+    VofaBridge() { Reset("127.0.0.1", 1347); };
+
     int sock_fd_{};
     sockaddr_in addr_serv_{};
     std::vector<float> data_buffer_{};

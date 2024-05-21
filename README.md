@@ -1,47 +1,93 @@
-# Robot Mapper
+# Vofa Bridge
 
 ## 简介
 
-通过统一的 `SN码<-->机器人` 映射文件，实现自适应的"当前NUC所在机器人"信息获取。
+Vofa+ 上位机协议调试用封装库。
 
 ## 用途
 
-读取设备S/N码，通过配置文件实现到机器人枚举的映射。
+实现了基于UDP协议的JustFloat数据引擎格式，用于使用Vofa+上位机进行调试数据展示与绘图。
 
 ## 用法
 
 ```cpp
-std::cout << "Your Type is:" << std::endl;
-    auto type = rbmp::GetMyRobotType<TargetClassify>();
-    if (!type.has_value())
-        std::cout << "UNKNOWN" << std::endl;
-    else
-        std::cout << rbmp::enum_reflect::enum2string<TargetClassify>(type.value());
+VofaBridge vb = VofaBridge::Get();
+for (auto&& i = 1; i < 500; ++i) {
+    auto num = static_cast<float>(i) / 10.f;
+    vb.PushData(std::sin(num));
+    vb.PushData(std::cos(num));
+    vb.PushData(std::tan(num));
+    vb.SendData();
+    std::this_thread::sleep_for(100ms);
+}
+std::this_thread::sleep_for(1000ms);
+vb.ClearData();
+for (auto&& i = 1; i < 500; ++i) {
+    auto num = static_cast<float>(i) / 10.f;
+    vb.AssignData(std::sin(num), std::cos(num), std::tan(num));
+    vb.SetData(3, i);
+    vb.SendData();
+    std::this_thread::sleep_for(100ms);
+}
+std::this_thread::sleep_for(1000ms);
+vb.ClearData();
+vb.SendOnce(3, 1, 4);
+std::this_thread::sleep_for(1000ms);
+vb.SendOnce(6, 2, 8);
+std::this_thread::sleep_for(1000ms);
+vb.SendOnce(9, 4, 2);
 ```
 
 ## API
 
 ```cpp
-template <typename E, typename = typename std::enable_if<std::is_enum_v<E>, void>::type>
-std::optional<E> rbmp::GetMyRobotType();
+static VofaBridge& Get();
 ```
 
-模板参数E为枚举类型。
+获取一个VofaBridge实例引用。
 
-当配置文件中存在 `当前设备S/N码` 到 `给定枚举类型中的值` 的映射时，返回结果。否则返回 `std::nullopt`。
+```cpp
+void Reset(std::string_view ip, unsigned short port);
+```
+
+重置与vofa+的连接。
+
+```cpp
+void SendOnce(auto&&... data);
+```
+
+直接发送一次数据。
+
+```cpp
+void PushData(auto&&... data);
+```
+
+向缓冲区尾部插入指定数据。
+
+```cpp
+void AssignData(auto&&... data);
+```
+
+重新赋值缓冲区所有数据。
+
+```cpp
+void SetData(std::size_t index, auto&& data);
+```
+
+将缓冲区指定下标位置设置为给定数据。
+
+```cpp
+void SendData();
+```
+
+发送缓冲区内的所有数据。
+
+```cpp
+void ClearData();
+```
+
+清空缓冲区内的所有数据。
 
 ## 注意事项
 
-### 获取本机S/N码
-
-```sh
-sudo dmidecode -s system-serial-number
-```
-
-### 相关配置
-
-使用前请确保设置 `robot_mapper.hpp` 中的 `kMapPath` 变量为映射表路径，`kDelimiter` 变量为分隔符。
-
-### 映射目标模板类型要求
-
-用于映射的目标模板类型 `E` 需要可以从 `robot_mapper.hpp` 的作用域访问到，即不可以是私有成员或函数局部枚举等。
+Vofa+请使用JustFloat数据引擎与UDP数据接口。
