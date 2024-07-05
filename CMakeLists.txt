@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.5)
-project(vofa_bridge LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
 
-add_library(${PROJECT_NAME} OBJECT ./vofa_bridge.hpp)
+file(GLOB_RECURSE srcs CONFIGURE_DEPENDES src/*.cpp)
+add_library(vofa_bridge OBJECT ${srcs})
+target_include_directories(vofa_bridge PUBLIC include)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+if (vlog_BUILD_EXAMPLE)
+    add_subdirectory(example)
+endif ()

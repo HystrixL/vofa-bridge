@@ -11,7 +11,7 @@
 #include <vector>
 #include "array"
 
-namespace vpb {
+namespace vpie {
 class VofaBridge {
    private:
     template <std::size_t len>
@@ -20,16 +20,9 @@ class VofaBridge {
         std::array<unsigned char, 4> tail{};
     };
 
-    void Open(std::string_view ip, unsigned short port) {
-        sock_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+    void Open(std::string_view ip, unsigned short port);
 
-        memset(&addr_serv_, 0, sizeof(addr_serv_));
-        addr_serv_.sin_family = AF_INET;
-        addr_serv_.sin_addr.s_addr = inet_addr(ip.data());
-        addr_serv_.sin_port = htons(port);
-    }
-
-    void Close() const { close(sock_fd_); }
+    void Close() const;
 
    public:
     /**
@@ -76,24 +69,12 @@ class VofaBridge {
     /**
      * @brief 发送缓冲区内的所有数据
      */
-    void SendData() {
-        if (data_buffer_.empty())
-            return;
-        std::unique_ptr<char> ptr = std::make_unique<char>(sizeof(float) * data_buffer_.size() + data_tail_.size());
-        std::memcpy(ptr.get(), data_buffer_.data(), sizeof(float) * data_buffer_.size());
-        std::memcpy(ptr.get() + sizeof(float) * data_buffer_.size(), data_tail_.data(), data_tail_.size());
-        sendto(sock_fd_, ptr.get(), sizeof(float) * data_buffer_.size() + data_tail_.size(), 0,
-               reinterpret_cast<sockaddr*>(&addr_serv_), sizeof(addr_serv_));
-        ClearData();
-    }
+    void SendData();
 
     /**
      * @brief 清空缓冲区内的所有数据
      */
-    void ClearData() {
-        data_buffer_.clear();
-        data_buffer_.resize(0);
-    }
+    void ClearData();
 
     /**
      * @brief 重置与vofa+的连接
@@ -101,27 +82,23 @@ class VofaBridge {
      * @param ip vofa+监听ip
      * @param port vofa+监听端口
      */
-    void Reset(std::string_view ip, unsigned short port) {
-        Close();
-        Open(ip, port);
-    }
+    void Reset(std::string_view ip, unsigned short port);
 
     /**
      * @brief 获取一个VofaBridge实例引用
      */
-    static VofaBridge& Get() {
-        static VofaBridge instance{};
-        return instance;
-    }
+    static VofaBridge& Get();
 
-    ~VofaBridge() { Close(); }
+    ~VofaBridge();
+
+    VofaBridge(const VofaBridge&) = delete;
 
    private:
-    VofaBridge() { Reset("127.0.0.1", 1347); };
+    VofaBridge();
 
     int sock_fd_{};
     sockaddr_in addr_serv_{};
     std::vector<float> data_buffer_{};
     constexpr static std::array<unsigned char, 4> data_tail_{0x00, 0x00, 0x80, 0x7f};
 };
-}  // namespace vpb
+}  // namespace vpie
