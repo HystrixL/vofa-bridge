@@ -1,5 +1,5 @@
 #include <vofa_bridge/vofa_bridge.h>
-#include <iostream>
+#include <memory>
 
 namespace vpie {
 void VofaBridge::Open(std::string_view ip, unsigned short port) {

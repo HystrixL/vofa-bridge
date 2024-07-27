@@ -1,3 +1,4 @@
+#include <fmt/core.h>
 #include <vofa_bridge/vofa_bridge.h>
 #include <chrono>
 #include <fstream>
@@ -7,35 +8,25 @@
 #include <vector>
 
 struct DataFrame {
-    DataFrame(const long& tp, const std::vector<float>& data) : tp_(tp), data_(data) {}
+    DataFrame() = default;
     long tp_{};
     std::vector<float> data_{};
 };
 
-std::vector<DataFrame> Read(std::ifstream& fs) {
-    std::vector<DataFrame> res{};
+void ReadAndSend(std::ifstream& fs) {
+    auto& vb = vpie::VofaBridge::Get();
     std::string line;
     while (std::getline(fs, line)) {
+        DataFrame data_frame{};
         std::istringstream iss(line);
-        long tp{};
-        iss >> tp;
 
-        std::vector<float> numbers;
+        iss >> data_frame.tp_;
+
         float number;
-
         while (iss >> number) {
-            numbers.push_back(number);
+            data_frame.data_.push_back(number);
         }
 
-        res.emplace_back(tp, numbers);
-    }
-
-    return res;
-}
-
-void Resend(const std::vector<DataFrame>& data_frames) {
-    auto& vb = vpie::VofaBridge::Get();
-    for (const DataFrame& data_frame : data_frames) {
         static long last_tp = data_frame.tp_;
         long now_tp = data_frame.tp_;
 
@@ -46,12 +37,13 @@ void Resend(const std::vector<DataFrame>& data_frames) {
         vb.SendData();
 
         last_tp = now_tp;
+
+        fmt::print("play 1 frame.\n");
     }
 }
 
 int main() {
-    std::ifstream fs{"vofa.txt"};
-    auto r = Read(fs);
-    Resend(r);
+    std::ifstream fs{"vofa_record.txt"};
+    ReadAndSend(fs);
     fs.close();
 }

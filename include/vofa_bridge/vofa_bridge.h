@@ -1,13 +1,14 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <fmt/chrono.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
 #include <cstring>
-#include <memory>
+#include <fstream>
 #include <string_view>
 #include <vector>
 #include "array"
@@ -69,9 +70,12 @@ class VofaBridge {
     }
 
     template <typename... T>
-    void Write2File(std::ofstream& fs, T&&... value) {
-        fs << std::chrono::steady_clock::now().time_since_epoch().count() << ' ';
-        ((fs << value << ' '), ...) << '\n';
+    void Record(T&&... value) {
+        if (!ofs.is_open())
+            ofs.open(fmt::format("vofa_record-{:%Y-%m-%d %H:%M:%S}.txt", fmt::localtime(std::time(nullptr))));
+        ofs << std::chrono::steady_clock::now().time_since_epoch().count() << ' ';
+        ((ofs << value << ' '), ...) << '\n';
+        ofs.flush();
     }
 
     /**
@@ -108,5 +112,7 @@ class VofaBridge {
     sockaddr_in addr_serv_{};
     std::vector<float> data_buffer_{};
     constexpr static std::array<unsigned char, 4> data_tail_{0x00, 0x00, 0x80, 0x7f};
+
+    std::ofstream ofs{};
 };
 }  // namespace vpie

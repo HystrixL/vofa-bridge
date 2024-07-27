@@ -8,7 +8,9 @@ using namespace std::chrono_literals;
 int main() {
     using namespace vpie;
     auto& v = VofaBridge::Get();
-
+    v.Record(1, 2, 3, 4, 5);
+    v.Record(2, 3, 4, 5, 6);
+    v.Record(3, 4, 5, 6, 7);
     for (auto&& i = 1; i < 500; ++i) {
         auto num = static_cast<float>(i) / 10.f;
         v.PushData(std::sin(num));
