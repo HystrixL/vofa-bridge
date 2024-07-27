@@ -5,11 +5,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <string_view>
 #include <vector>
 #include "array"
+#include "fstream"
 
 namespace vpie {
 class VofaBridge {
@@ -64,6 +66,12 @@ class VofaBridge {
         if (index > data_buffer_.size() - 1)
             data_buffer_.resize(index + 1);
         data_buffer_[index] = static_cast<float>(data);
+    }
+
+    template <typename... T>
+    void Write2File(std::ofstream& fs, T&&... value) {
+        fs << std::chrono::steady_clock::now().time_since_epoch().count() << ' ';
+        ((fs << value << ' '), ...) << '\n';
     }
 
     /**
